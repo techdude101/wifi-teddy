@@ -35,35 +35,15 @@ void turnLEDOff()
   digitalWrite(LED_BUILTIN, LOW);
 }
 
-// void playSound(uint8_t audioSampleIndex)
-// {
-//   // http://soundfile.sapp.org/doc/WaveFormat/
-//   // Wave data starts at byte 44
-//   for (uint16_t i = 44; i < sizeof(Pika_Pika); i++) {
-//     // Delay - sample rate is 8000Hz
-//     // Delay in ms = 1 / sample rate = 1 / 8000 = 125uS
-//     unsigned long timeout = micros() + 125UL;
-//     // Turn on LED if above a threshold
-//     if (Pika_Pika[i] > 150) {
-//       toggleLED();
-//     }
-//     while (micros() < timeout);
-//     // Set DAC voltage
-//     dacWrite(DAC1, (uint8_t)(Pika_Pika[i] / 2));
-//   }
-//   // Set DAC pin low when playing is finished
-//   dacWrite(DAC1, 0);
-//   turnLEDOff();
-// }
-
 void playSound(uint8_t audioSampleIndex)
 {
   // http://soundfile.sapp.org/doc/WaveFormat/
   // Wave data starts at byte 44
+  const int WAVE_DATA_START = 44;
 
   if (audioSampleIndex == 1)
   {
-    for (uint16_t i = 44; i < sizeof(Pika_Pika); i++)
+    for (uint16_t i = WAVE_DATA_START; i < sizeof(Pika_Pika); i++)
     {
       // Delay - sample rate is 8000Hz
       // Delay in ms = 1 / sample rate = 1 / 8000 = 125uS
@@ -81,7 +61,7 @@ void playSound(uint8_t audioSampleIndex)
   }
   else if (audioSampleIndex == 2)
   {
-    for (uint16_t i = 44; i < sizeof(Pika_Scream); i++)
+    for (uint16_t i = WAVE_DATA_START; i < sizeof(Pika_Scream); i++)
     {
       // Delay - sample rate is 8000Hz
       // Delay in ms = 1 / sample rate = 1 / 8000 = 125uS
@@ -99,7 +79,7 @@ void playSound(uint8_t audioSampleIndex)
   }
   else if (audioSampleIndex == 3)
   {
-    for (uint16_t i = 44; i < sizeof(Chewbacca); i++)
+    for (uint16_t i = WAVE_DATA_START; i < sizeof(Chewbacca); i++)
     {
       // Delay - sample rate is 8000Hz
       // Delay in ms = 1 / sample rate = 1 / 8000 = 125uS
@@ -117,7 +97,7 @@ void playSound(uint8_t audioSampleIndex)
   }
 
   // Set DAC pin high when playing is finished - to prevent NPN transistor heating up
-  dacWrite(DAC1, 128);
+  dacWrite(DAC1, 255);
   turnLEDOff();
 }
 
@@ -150,8 +130,8 @@ void setup()
   server.on("/index.css", HTTP_GET, [](AsyncWebServerRequest *request)
             { request->send(SPIFFS, "/index.css", "text/css"); });
 
-  server.on("/index.js", HTTP_GET, [](AsyncWebServerRequest *request)
-            { request->send(SPIFFS, "/index.js", "text/javascript"); });
+  server.on("/bundle.js", HTTP_GET, [](AsyncWebServerRequest *request)
+            { request->send(SPIFFS, "/bundle.js", "text/javascript"); });
 
   server.on("/toggle", HTTP_GET, [](AsyncWebServerRequest *request)
             {
