@@ -11,6 +11,7 @@ AsyncWebServer server(80);
 const int LED_BUILTIN = 2;
 bool ledIsOn = false;
 bool playAudio = false;
+uint8_t audioSample = 1;
 
 void toggleLED()
 {
@@ -34,24 +35,89 @@ void turnLEDOff()
   digitalWrite(LED_BUILTIN, LOW);
 }
 
-void playSound() 
+// void playSound(uint8_t audioSampleIndex)
+// {
+//   // http://soundfile.sapp.org/doc/WaveFormat/
+//   // Wave data starts at byte 44
+//   for (uint16_t i = 44; i < sizeof(Pika_Pika); i++) {
+//     // Delay - sample rate is 8000Hz
+//     // Delay in ms = 1 / sample rate = 1 / 8000 = 125uS
+//     unsigned long timeout = micros() + 125UL;
+//     // Turn on LED if above a threshold
+//     if (Pika_Pika[i] > 150) {
+//       toggleLED();
+//     }
+//     while (micros() < timeout);
+//     // Set DAC voltage
+//     dacWrite(DAC1, (uint8_t)(Pika_Pika[i] / 2));
+//   }
+//   // Set DAC pin low when playing is finished
+//   dacWrite(DAC1, 0);
+//   turnLEDOff();
+// }
+
+void playSound(uint8_t audioSampleIndex)
 {
   // http://soundfile.sapp.org/doc/WaveFormat/
   // Wave data starts at byte 44
-  for (uint16_t i = 44; i < sizeof(Pika_Pika); i++) {
-    // Delay - sample rate is 8000Hz
-    // Delay in ms = 1 / sample rate = 1 / 8000 = 125uS
-    unsigned long timeout = micros() + 125UL;
-    // Turn on LED if above a threshold
-    if (Pika_Pika[i] > 150) {
-      toggleLED();
+
+  if (audioSampleIndex == 1)
+  {
+    for (uint16_t i = 44; i < sizeof(Pika_Pika); i++)
+    {
+      // Delay - sample rate is 8000Hz
+      // Delay in ms = 1 / sample rate = 1 / 8000 = 125uS
+      unsigned long timeout = micros() + 125UL;
+      // Turn on LED if above a threshold
+      if (Pika_Pika[i] > 150)
+      {
+        toggleLED();
+      }
+      while (micros() < timeout)
+        ;
+      // Set DAC voltage
+      dacWrite(DAC1, (uint8_t)(Pika_Pika[i] / 2));
     }
-    while (micros() < timeout);
-    // Set DAC voltage
-    dacWrite(DAC1, (uint8_t)(Pika_Pika[i] / 2));
   }
-  // Set DAC pin low when playing is finished
-  dacWrite(DAC1, 0);
+  else if (audioSampleIndex == 2)
+  {
+    for (uint16_t i = 44; i < sizeof(Pika_Scream); i++)
+    {
+      // Delay - sample rate is 8000Hz
+      // Delay in ms = 1 / sample rate = 1 / 8000 = 125uS
+      unsigned long timeout = micros() + 125UL;
+      // Turn on LED if above a threshold
+      if (Pika_Scream[i] > 150)
+      {
+        toggleLED();
+      }
+      while (micros() < timeout)
+        ;
+      // Set DAC voltage
+      dacWrite(DAC1, (uint8_t)(Pika_Scream[i] / 2));
+    }
+  }
+  else if (audioSampleIndex == 3)
+  {
+    for (uint16_t i = 44; i < sizeof(Chewbacca); i++)
+    {
+      // Delay - sample rate is 8000Hz
+      // Delay in ms = 1 / sample rate = 1 / 8000 = 125uS
+      unsigned long timeout = micros() + 125UL;
+      // Turn on LED if above a threshold
+      if (Chewbacca[i] > 150)
+      {
+        toggleLED();
+      }
+      while (micros() < timeout)
+        ;
+      // Set DAC voltage
+      dacWrite(DAC1, (uint8_t)(Chewbacca[i] / 2));
+    }
+  }
+
+  // Set DAC pin high when playing is finished - to prevent NPN transistor heating up
+  dacWrite(DAC1, 128);
   turnLEDOff();
 }
 
@@ -61,12 +127,6 @@ void setup()
 
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW);
-
-  // DAC Audio stuff
-  Serial.println("Startup...");
-  Serial.println("Playing...");
-  playSound();
-  Serial.println("Playing stopped");
 
   if (!SPIFFS.begin())
   {
@@ -87,6 +147,9 @@ void setup()
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
             { request->send(SPIFFS, "/index.html", "text/html"); });
 
+  server.on("/index.css", HTTP_GET, [](AsyncWebServerRequest *request)
+            { request->send(SPIFFS, "/index.css", "text/css"); });
+
   server.on("/index.js", HTTP_GET, [](AsyncWebServerRequest *request)
             { request->send(SPIFFS, "/index.js", "text/javascript"); });
 
@@ -105,14 +168,32 @@ void setup()
               request->send(200, "application/json", buf);
             });
 
-  server.on("/play", HTTP_GET, [](AsyncWebServerRequest *request)
+  server.on("/play1", HTTP_GET, [](AsyncWebServerRequest *request)
             {
               playAudio = true;
+              audioSample = 1;
               char buf[20];
               snprintf(buf, 20, "{\"playing\": %d}", playAudio);
               request->send(200, "application/json", buf);
             });
 
+  server.on("/play2", HTTP_GET, [](AsyncWebServerRequest *request)
+            {
+              playAudio = true;
+              audioSample = 2;
+              char buf[20];
+              snprintf(buf, 20, "{\"playing\": %d}", playAudio);
+              request->send(200, "application/json", buf);
+            });
+
+  server.on("/play3", HTTP_GET, [](AsyncWebServerRequest *request)
+            {
+              playAudio = true;
+              audioSample = 3;
+              char buf[20];
+              snprintf(buf, 20, "{\"playing\": %d}", playAudio);
+              request->send(200, "application/json", buf);
+            });
   DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
   server.begin();
 }
@@ -125,7 +206,7 @@ void loop()
   if (playAudio)
   {
     Serial.println("Playing...");
-    playSound();
+    playSound(audioSample);
     playAudio = false; // Reset the flag
     Serial.println("Playing stopped");
   }
